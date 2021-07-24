@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+JENKINS_CLI=jenkins-cli.jar
+JENKINS_CJOC_URL=http://localhost:8080/
+JENKINS_AUTH=admin:admin
+
+if [ -z "$JENKINS_CJOC_URL" ]; then
+    echo "Need to set environment variable JENKINS_CJOC_URL (Operations Center root URL)."
+    exit 1
+fi
+
+if [ -z "$JENKINS_AUTH" ]; then
+    echo "Need to set environment variable JENKINS_AUTH (format: 'userId:apiToken')."
+    exit 1
+fi
+
+
+if [ -f "$JENKINS_CLI" ]
+then
+	echo "Using $JENKINS_CLI."
+else
+	wget -O "$JENKINS_CLI" $JENKINS_CJOC_URL/jnlpJars/jenkins-cli.jar
+fi
+
+java -jar $JENKINS_CLI -s $JENKINS_CJOC_URL -auth $JENKINS_AUTH list-masters | jq -r '.data.masters[] | select(.status == "ONLINE") | .url' | while read url; do
+	java -jar $JENKINS_CLI -s $url -auth $JENKINS_AUTH groovy = < configuration-script.groovy
+	java -jar $JENKINS_CLI -s $url -auth $JENKINS_AUTH install-plugin beer
+done
