@@ -1,0 +1,42 @@
+properties([
+parameters([
+    [$class: 'ChoiceParameter', 
+        choiceType: 'PT_SINGLE_SELECT', 
+        description: 'Select the Env Name from the Dropdown List', 
+        filterLength: 1, 
+        filterable: true, 
+        name: 'Env', 
+        randomName: 'choice-parameter-5631314439613978', 
+        script: [
+            $class: 'GroovyScript', 
+            fallbackScript: [
+                classpath: [], 
+                sandbox: false, 
+                script: 
+                    'return[\'Could not get Env\']'
+            ], 
+            script: [
+                classpath: [], 
+                sandbox: false, 
+                script: 
+                    'return["DEV1","QA1","DEV2","QA2","DEV1-QA1","DEV2-QA2"]'
+            ]
+        ]
+    ]
+])
+])
+
+pipeline {
+	agent any
+    stages {
+        stage ('Speak') {
+            when {
+                // Only say hello if a "greeting" is requested
+                expression { params.Env == 'DEV1' }
+            }
+            steps {
+                echo "Hello, DEV1!"
+            }
+        }
+    }
+}
