@@ -1,0 +1,27 @@
+pipeline {
+    agent { 
+        node {
+          label 'transpac-hng'
+          customWorkspace 'C:/Jenkins/wkspc/TPHNG'
+        }
+    }
+    stages {
+	    stage('Collect Artifacts') {
+          steps {
+		     script {
+		       def currentTag = sh(returnStdout: true, script: "git describe --candidate=1 --tags").trim()
+		       sh "echo $currentTag"
+               def tagParts = currentTag.tokenize('.')
+               sh "echo $tagParts"
+               sh "echo ${tagParts[0]}"
+               sh "echo ${tagParts[1]}"
+               sh "echo ${tagParts[2]}"
+               sh "echo ${tagParts[3]}"
+               sh "echo ${tagParts[3].toInteger() +1}"
+               def newTag = "${tagParts[0]}.${tagParts[1]}.${tagParts[2]}.${tagParts[3].toInteger() + 1}"
+               sh "echo $newTag"
+			}
+          }
+        }
+    }
+}
