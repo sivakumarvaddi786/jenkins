@@ -1,0 +1,41 @@
+pipeline {
+    agent { 
+        node {
+          label 'transpac-hng'
+          customWorkspace 'C:/jenkins/wkspc/test1/HyperDocsNG'
+        }
+    }
+    stages {
+        stage('check branch') {
+          steps {
+            script {
+                def branchName = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                echo "Current branch name is: ${branchName}"
+            }
+          }
+        }
+        stage('check the version') {            
+          steps {
+            script {
+                def currentTag = sh(returnStdout: true, script: "git describe --abbrev=0 --match *.*.*.* 2> /dev/null || echo 0.0.0.0").trim()
+                def branchName = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
+                sh "echo $currentTag"
+                def tagParts = currentTag.tokenize('.')
+                if (branchName == 'develop') {
+                    env.VERSION = "${tagParts[0].replaceFirst('^v', '')}.${tagParts[1].toInteger() + 1}.${tagParts[2]}.${tagParts[3]}"
+                    sh "echo new version is $env.VERSION"
+                } else if (branchName.startsWith('feature/')) {
+                    env.VERSION = "${tagParts[0].replaceFirst('^v', '')}.${tagParts[1]}.${tagParts[2].toInteger() + 1}.${tagParts[3]}"
+                    sh "echo new version is $env.VERSION"
+                } else if (branchName.startsWith('release/')) {
+                    env.VERSION = "${tagParts[0].replaceFirst('^v', '')}.${tagParts[1]}.${tagParts[2].toInteger() + 1}.${tagParts[3]}"
+                    sh "echo new version is $env.VERSION"
+                }  else {
+                    env.VERSION = "${tagParts[0].replaceFirst('^v', '').toInteger() + 1}.${tagParts[1]}.${tagParts[2]}.${tagParts[3]}"
+                    sh "echo new version is $env.VERSION"
+                   }
+            }
+          }  
+        }
+    }
+}
