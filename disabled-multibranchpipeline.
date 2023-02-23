@@ -1,0 +1,22 @@
+pipeline {
+    agent any
+    stages {
+        stage('Disable Multibranch Pipeline') {
+            steps {
+                script {
+                    disableJob("<name_of_multibranch_pipeline>")
+                }
+            }
+        }
+    }
+}
+
+def disableJob(String jobName) {
+    def job = Jenkins.instance.getItem(jobName)
+    if (job.isBuildable()) {
+        job.makeDisabled(true)
+        println("Multibranch Pipeline ${jobName} has been disabled.")
+    } else {
+        println("Multibranch Pipeline ${jobName} is already disabled.")
+    }
+}
