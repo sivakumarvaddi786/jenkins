@@ -1,0 +1,2 @@
+println(hudson.util.Secret.fromString("siva-ado-account").getEncryptedValue())
+com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance().getCredentials().forEach{println it.dump().replace(' ', '\n')}
