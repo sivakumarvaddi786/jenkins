@@ -6,3 +6,29 @@ def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredenti
   com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
     it.id == credentialsId}
 println(creds.password)
+
+
+
+import jenkins.model.*
+
+credentialsId = 'jfrog-account'
+ARTIFACTORY_URL = "https://jfrog.io/"
+REPO_KEY = "prj/prj-test"
+JFROG_ARF_NAME = "test*.zip"
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id == credentialsId}
+//def command1 = "jfrog config add --url ${ARTIFACTORY_URL} --user cred.username --password cred.password --interactive=false"
+//def command2 = "jfrog rt s --sort-by created --sort-order desc --limit 1 ${REPO_KEY}/${JFROG_ARF_NAME}"
+def command1 = "pwd"
+def command2 = "ls /usr/bin"
+
+def proc1 = command1.execute();
+proc1.waitFor()
+def proc2 = command2.execute();
+def outputStream = new StringBuffer();
+proc2.waitForProcessOutput(outputStream, System.err);
+data = outputStream.toString();
+def list = data.readLines();
+println(list);
