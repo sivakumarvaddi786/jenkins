@@ -1,0 +1,8 @@
+import jenkins.model.*
+
+credentialsId = ''
+
+def creds = com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(
+  com.cloudbees.plugins.credentials.common.StandardUsernameCredentials.class, Jenkins.instance, null, null ).find{
+    it.id == credentialsId}
+println(creds.password)
