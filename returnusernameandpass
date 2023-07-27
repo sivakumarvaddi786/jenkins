@@ -32,3 +32,38 @@ proc2.waitForProcessOutput(outputStream, System.err);
 data = outputStream.toString();
 def list = data.readLines();
 println(list);
+
+
+
+
+
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+if (BuildType == 'Release') {
+def limit = 3
+  credentialsId = 'acc'
+  ARTIFACTORY_URL = "https://jfrog.io/"
+  REPO_KEY = "prj/arf-folder"
+  JFROG_ARF_NAME = "artifact*.zip"
+
+
+  def apiToken = 'token' // Replace this with your actual API token
+
+  def command1 = "jfrog config add --url ${ARTIFACTORY_URL} --user skumar --password ${apiToken} --interactive=false"
+  def command2 = "jfrog rt s --sort-by created --sort-order desc --limit ${limit} ${REPO_KEY}/${JFROG_ARF_NAME}"
+
+  def proc1 = command1.execute()
+  proc1.waitFor()
+ 
+  def artifactsOutput = command2.execute().text // Get the actual output text
+  println(artifactsOutput)
+
+  def jsonSlurper = new groovy.json.JsonSlurper()
+  def jsonMap = jsonSlurper.parseText(artifactsOutput)
+  def names = jsonMap.path
+  return names
+//writeFile file: CHOICES_FILE_NAME, text: names.join('\n')
+//def userChoice = readFile(CHOICES_FILE_NAME).trim().split('\n')
+} else {
+  return ['wasted effort']
+}
