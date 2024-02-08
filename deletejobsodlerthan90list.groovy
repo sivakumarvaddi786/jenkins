@@ -1,0 +1,54 @@
+import hudson.model.*
+import jenkins.model.*
+
+// Specify the list of Jenkins multi-branch pipeline job names
+def targetJobNames = ["Job_Name_1", "Job_Name_2", "Job_Name_3"]
+
+// Get the Jenkins instance
+def jenkins = Jenkins.getInstance()
+
+// Iterate over each job name in the list
+targetJobNames.each { targetJobName ->
+    // Find the specific multi-branch pipeline job by name
+    def targetJob = jenkins.getItemByFullName(targetJobName)
+
+    // Check if the job exists
+    if (targetJob instanceof org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject) {
+        // Iterate over all branches of the multi-branch pipeline
+        targetJob.getItems().each { branch ->
+            println("Branch: ${branch.name}")
+
+            // Get the current time in milliseconds
+            def currentTimeMillis = System.currentTimeMillis()
+
+            // List to store builds for deletion
+            def buildsToDelete = []
+
+            // Iterate over builds of the branch
+            branch.getBuilds().each { build ->
+                // Get the build timestamp in milliseconds
+                def buildTimeMillis = build.getTimeInMillis()
+
+                // Calculate the age of the build in milliseconds
+                def buildAgeMillis = currentTimeMillis - buildTimeMillis
+
+                // Calculate the age of the build in days
+                def buildAgeDays = buildAgeMillis / (1000 * 60 * 60 * 24)
+
+                // Check if the build is older than three months (90 days)
+                if (buildAgeDays > 90) {
+                    println("Job: ${branch.name}, Build Number: ${build.number}, Build Age: ${buildAgeDays} days")
+                    buildsToDelete.add(build)
+                }
+            }
+
+            // Delete builds older than three months for the current branch
+            buildsToDelete.each { build ->
+                build.delete()
+                println("Deleted build: ${build.fullDisplayName}")
+            }
+        }
+    } else {
+        println("Multi-branch pipeline job ${targetJobName} not found in Jenkins.")
+    }
+}
