@@ -41,3 +41,39 @@ pipeline {
         }
     }
 }
+
+
+pipeline {
+    agent any
+    
+    environment {
+        GIT_TAG_PREFIX = 'v' // Specify the prefix for your tags, e.g., 'v' for version tags
+        GIT_COMMIT_MSG = 'Automated tag bump' // Specify the commit message for the tag bump
+    }
+
+    stages {
+        stage('Bump Git Tag') {
+            steps {
+                script {
+                    // Assuming you have already checked out your Git repository in the workspace
+
+                    // Get the latest tag from the repository
+                    def latestTag = sh(script: 'git describe --tags --abbrev=0', returnStdout: true).trim()
+
+                    // Parse and increment the version number
+                    def tagParts = latestTag.tokenize('.')
+                    def major = tagParts[0] as int
+                    def minor = tagParts[1] as int
+                    def patch = tagParts[2] as int
+                    patch++
+                    def newTag = "${major}.${minor}.${patch}"
+
+                    // Create and push the new tag
+                    sh "git tag -a ${GIT_TAG_PREFIX}${newTag} -m '${GIT_COMMIT_MSG}'"
+                    sh "git push origin ${GIT_TAG_PREFIX}${newTag}"
+                }
+            }
+        }
+    }
+}
+
