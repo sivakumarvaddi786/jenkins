@@ -1,0 +1,103 @@
+# escape=`
+
+# Use the latest Windows Server Core 2022 image.
+#FROM pdi-jenkins-docker-registry.jfrog.io/common-windows-boilerplate:init
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2019
+# Restore the default Windows shell for correct batch processing.
+SHELL ["cmd", "/S", "/C"]
+
+ADD https://aka.ms/vs/17/release/vs_buildtools.exe C:\TEMP\vs_buildtools.exe
+
+RUN `
+    # Install Build Tools with the Microsoft.VisualStudio.Workload.AzureBuildTools workload, excluding workloads and components with known issues.
+    (start /w C:\temp\vs_buildtools.exe --quiet --wait --norestart --nocache `
+        --installPath "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\BuildTools" `
+    --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.XamarinBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.MSBuildTools `
+    --add Microsoft.VisualStudio.Workload.VCTools `
+    --add Microsoft.VisualStudio.Workload.AzureBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.NetCoreBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.DataBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.NodeBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Workload.WebBuildTools;includeRecommended;includeOptional `
+    --add Microsoft.VisualStudio.Component.SQL.SSDT;includeRecommended;includeOptional `
+        || IF "%ERRORLEVEL%"=="3010" EXIT 0) `
+    # Cleanup
+    && del /q C:\temp\vs_buildtools.exe
+
+# Set JAVA_HOME as an environment variable
+ENV JAVA_HOME "C:\Program Files\AdoptOpenJDK\jdk-11.0.7.10-hotspot"
+# Set PATH environment variable to include Java
+RUN setx /M PATH "%JAVA_HOME%\bin;%PATH%;C:\Program Files\Nuget;C:\Program Files\Sonarqube;C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin;C:\Program Files\Git\usr\bin;"
+
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+# Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+RUN choco feature enable -n allowGlobalConfirmation
+
+# Install Sonar Scanner
+ADD https://github.com/SonarSource/sonar-scanner-msbuild/releases/download/4.10.0.19059/sonar-scanner-msbuild-4.10.0.19059-net46.zip C:\TEMP\sonar-scanner-msbuild.zip
+RUN Expand-Archive -Path C:\TEMP\sonar-scanner-msbuild.zip -DestinationPath 'C:\Program Files\Sonarqube\'
+
+# Install Chocolatey
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+RUN choco feature enable -n allowGlobalConfirmation
+
+
+# Install Java 11 JDK using Chocolatey
+RUN choco install -y openjdk11
+# Verify Java installation
+RUN java -version
+
+ENV ANDROID_SDK "C:\Program Files (x86)"
+ENV ANDROID_HOME "${ANDROID_SDK}\Android\android-sdk"
+ADD android-sdk "${ANDROID_SDK}\Android\"
+#ADD android-33 "${ANDROID_SDK}\Android\android-sdk\platform"
+ADD .npmrc "C:\users\ContainerAdministrator\"
+ADD Nuget.config "C:\Users\ContainerAdministrator\AppData\Roaming\NuGet\"
+ADD slave-launch.ps1 "c:\"
+# Install node
+RUN wget -Uri https://nodejs.org/dist/v16.18.0/node-v16.18.0-x64.msi -OutFile C:\node.msi -UseBasicParsing ; `
+    Start-Process -FilePath msiexec -ArgumentList /q, /i, C:\node.msi -Wait ; `
+    Remove-Item -Path C:\node.msi
+
+# Install AzureCLI
+RUN Invoke-WebRequest -Uri https://aka.ms/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'
+
+# Install AppCenter CLI
+RUN npm install -g appcenter-cli
+RUN npm install -g jfrog-cli-go
+
+# Install Nuget
+RUN mkdir 'C:\Program Files\NuGet'
+RUN Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/v5.8.0/nuget.exe -OutFile "$env:PROGRAMFILES\NuGet\nuget.exe"
+
+# Install Git
+RUN choco install -y git
+
+# Enable filenames with long path to handle properly
+RUN git config --system core.longpaths true
+
+# Install MSBuild CommunityTasks
+RUN choco install -y msbuild.communitytasks
+RUN choco install nunit-console-runner -y
+
+# Install Angular-cli
+RUN  npm install -g @angular/cli
+
+# Install rimraf
+RUN npm install rimraf -g
+
+RUN Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+
+# Install SQLServer Powershell Module which is required for Database deployments
+RUN Install-Module -Name SqlServer -Force
+
+# Define the entry point for the docker container.
+ENTRYPOINT ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-Command", "& 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\Common7\\Tools\\VsDevCmd.bat' ; & 'C:\\slave-launch.ps1'"]
+SHELL ["cmd", "/S", "/C"]
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
