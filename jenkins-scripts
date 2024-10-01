@@ -1,3 +1,31 @@
 println(hudson.util.Secret.fromString("siva-ado-account").getEncryptedValue())
 com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance().getCredentials().forEach{println it.dump().replace(' ', '\n')}
 Jenkins.instance.queue.clear()
+
+
+Jenkins.instance.getAllItems(Job.class).each { job ->
+    job.builds.each { build ->
+        if (build.isBuilding()) {
+            println "Job Name: ${job.fullName}, Build Number: ${build.number}, URL: ${build.absoluteUrl}, Duration: ${build.durationString}"
+        }
+    }
+}
+
+
+import hudson.model.Queue
+
+def queue = Jenkins.instance.queue
+
+// Iterate through the build queue
+queue.items.each { item ->
+    def jobName = item.task.fullDisplayName
+    def buildDuration = item.task.estimatedDuration
+   println "Cancelling job: ${buildDuration} with estimated duration: ${buildDuration}ms"
+
+    // Define your criteria for jobs to be cancelled, for example:
+    // If the job duration is more than a certain threshold or any other condition
+    if (buildDuration == -1) { // Check if it's matching some criteria
+        println "Cancelling job: ${jobName} with estimated duration: ${buildDuration}ms"
+        queue.cancel(item) // Cancel the queued job
+    }
+}
