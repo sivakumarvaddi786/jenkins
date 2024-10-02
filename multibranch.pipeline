@@ -57,6 +57,25 @@ if (job instanceof WorkflowMultiBranchProject) {
 } else {
     println "Job '${jobName}' is not a Multibranch Pipeline."
 }
+#list multibranch pipelines inside a folder
+import jenkins.model.Jenkins
+import com.cloudbees.hudson.plugins.folder.Folder
+
+// Specify the folder name
+def folderName = 'Foldername'
+
+// Get the Jenkins instance and find the folder
+def folder = Jenkins.instance.getItemByFullName(folderName)
+
+if (folder instanceof Folder) {
+    println "Jobs in Folder '${folderName}':"
+    folder.items.each { job ->
+        println "- Job Name: ${job.name}, Job Type: ${job.getClass()}"
+    }
+} else {
+    println "Folder '${folderName}' not found or is not a Folder."
+}
+
 
 
 pipeline {
