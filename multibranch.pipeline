@@ -1,3 +1,36 @@
+import jenkins.branch.BranchSource
+import jenkins.branch.MultiBranchProject
+import jenkins.model.Jenkins
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
+import jenkins.plugins.git.GitSCMSource
+import jenkins.scm.impl.trait.RegexSCMHeadFilterTrait
+
+// Create a Multibranch Pipeline job
+def jenkinsInstance = Jenkins.instance
+def jobName = 'example' // Name of the multibranch job
+
+// Check if the job already exists
+if (jenkinsInstance.getItem(jobName) == null) {
+    // Create a new Multibranch Pipeline job
+    WorkflowMultiBranchProject mbp = jenkinsInstance.createProject(WorkflowMultiBranchProject.class, jobName)
+
+    // Set up the Git source with credentials and branch filter
+    def gitSource = new GitSCMSource('12121212', 'https://github.com/jenkinsci/job-dsl-plugin.git', '', 'github-ci', '', false)
+
+    // Add branch sources to the Multibranch Pipeline job
+    gitSource.setTraits([new RegexSCMHeadFilterTrait('JENKINS-.*')]) // Only include branches that match the pattern
+    mbp.getSourcesList().add(new BranchSource(gitSource))
+
+    // Save the job configuration
+    mbp.save()
+
+    println("Multibranch Pipeline job '${jobName}' created successfully!")
+} else {
+    println("Job '${jobName}' already exists!")
+}
+
+
+
 pipeline {
  
     environment {
