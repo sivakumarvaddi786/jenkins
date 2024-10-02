@@ -77,6 +77,37 @@ if (folder instanceof Folder) {
 }
 
 
+#list multibranch properties
+
+import jenkins.model.Jenkins
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
+import jenkins.plugins.git.GitSCMSource
+
+// Specify the Multibranch Pipeline job name
+def jobName = 'folder/multibranchname' // Replace with your actual Multibranch Pipeline job name
+
+// Get the Jenkins instance and find the job
+def job = Jenkins.instance.getItemByFullName(jobName)
+
+if (job instanceof WorkflowMultiBranchProject) {
+    println "Multibranch Pipeline Job Information for: ${jobName}"
+
+    // Print the full name of the multibranch pipeline job
+    println "Job Full Name: ${job.fullName}" // Unique full name
+    println "Job URL: ${job.url}" // URL of the job
+    
+    // Retrieve the branch sources and print the Git SCM ID (if using Git)
+    job.sourcesList.each { source ->
+        def scmSource = source.source
+        if (scmSource instanceof GitSCMSource) {
+            println "Git Repository ID: ${scmSource.id}" // The Git source ID
+            println "Git Remote URL: ${scmSource.remote}" // Git repository URL
+        }
+    }
+} else {
+    println "Job '${jobName}' is not a Multibranch Pipeline."
+}
+
 
 pipeline {
  
