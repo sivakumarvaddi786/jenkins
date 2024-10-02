@@ -109,6 +109,55 @@ if (job instanceof WorkflowMultiBranchProject) {
 }
 
 
+############update repoid
+
+import jenkins.model.Jenkins
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
+import jenkins.plugins.git.GitSCMSource
+import jenkins.branch.BranchSource
+
+// Full path to the Multibranch Pipeline job
+def jobName = 'example'  // Replace with your actual job name
+
+// Get the Jenkins instance and find the job
+def job = Jenkins.instance.getItemByFullName(jobName)
+
+if (job instanceof WorkflowMultiBranchProject) {
+    println "Found Multibranch Pipeline Job: ${jobName}"
+    
+    // Get the current Git branch source
+    def gitSource = null
+    job.sourcesList.each { source ->
+        if (source.source instanceof GitSCMSource) {
+            gitSource = source
+        }
+    }
+    
+    if (gitSource != null) {
+        // Remove the existing Git source
+        println "Removing existing Git SCM Source with ID: ${gitSource.source.id}"
+        job.sourcesList.remove(gitSource)
+        
+        // Create a new Git SCM source with a new ID
+        def newId = '1122334455'  // Set your new desired ID here
+        def newGitSource = new GitSCMSource(newId, 'https://pdidev.visualstudio.com/DefaultCollection/transpac/_git/YourRepo', '', 'ado-account', '', false)
+        
+        // Add the new Git source to the job
+        job.sourcesList.add(new BranchSource(newGitSource))
+        
+        // Save the job configuration
+        job.save()
+        
+        println "New Git SCM Source added with ID: ${newId}"
+    } else {
+        println "No Git SCM Source found for the job '${jobName}'."
+    }
+    
+} else {
+    println "Job '${jobName}' is not a Multibranch Pipeline."
+}
+###########################################################################
+
 pipeline {
  
     environment {
