@@ -29,3 +29,22 @@ queue.items.each { item ->
         queue.cancel(item) // Cancel the queued job
     }
 }
+
+
+
+import hudson.model.Queue
+
+def queue = Jenkins.instance.queue
+
+// Iterate through the build queue
+queue.items.each { item ->
+    def jobName = item.task.fullDisplayName
+    def buildDuration = item.task.estimatedDuration
+
+    // Define your criteria for jobs to be cancelled, for example:
+    // If the job duration is more than a certain threshold or any other condition
+    if (buildDuration > 0) { // Check if it's matching some criteria
+        println "Cancelling job: ${jobName} with estimated duration: ${buildDuration}ms"
+        queue.cancel(item) // Cancel the queued job
+    }
+}
