@@ -66,3 +66,22 @@ Jenkins.instance.getAllItems(Job.class).each { job ->
         }
     }
 }
+
+
+
+// Iterate over all jobs in Jenkins
+Jenkins.instance.getAllItems(Job.class).each { job ->
+    // Check if the job is a pipeline (workflow job) and has no builds
+    if (job instanceof org.jenkinsci.plugins.workflow.job.WorkflowJob && job.builds.isEmpty()) {
+        println "Deleting pipeline with no builds: ${job.fullName}"
+        
+        try {
+            // Delete the job
+            job.delete()
+            println "Successfully deleted: ${job.fullName}"
+        } catch (Exception e) {
+            println "Failed to delete: ${job.fullName}. Error: ${e.message}"
+        }
+    }
+}
+
