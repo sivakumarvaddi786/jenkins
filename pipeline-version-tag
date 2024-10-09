@@ -48,3 +48,37 @@ pipeline {
         }
     }
 }
+
+
+    - powershell: |
+        # Retrieve latest Git tag
+        $latestTag = git describe --tags --abbrev=0
+
+        # Parse major, minor, and patch versions from the tag
+        $versionNumbers = $latestTag -split '\.'
+        $MAJOR = $versionNumbers[0]
+        $MINOR = $versionNumbers[1]
+        $PATCH = $versionNumbers[2]
+
+        # Increment version components based on the branch name
+        if ($env:BUILD_SOURCEBRANCH -match '^feature/.*') {
+          $MINOR++
+          $PRE_RELEASE = "alpha.$env:BUILD_BUILDID"
+        }
+        elseif ($env:BUILD_SOURCEBRANCH -match '^release/.*') {
+          $MINOR++
+          $PATCH++
+          $PRE_RELEASE = "beta.$env:BUILD_BUILDID"
+        }
+        elseif ($env:BUILD_SOURCEBRANCH -match '^bugfix/.*') {
+          $PATCH++
+          $PRE_RELEASE = "rc.$env:BUILD_BUILDID"
+        }
+
+        # Output calculated version
+        $VERSION = "$MAJOR.$MINOR.$PATCH-$PRE_RELEASE"
+        Write-Host "##vso[task.setvariable variable=VERSION]$VERSION"
+      displayName: 'Determine Version'
+    env:
+      BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+      BUILD_BUILDID: $(Build.BuildId)
