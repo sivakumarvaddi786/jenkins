@@ -1,0 +1,73 @@
+pipeline {
+    agent { label 'master' }
+
+    parameters {
+        choice(name: 'ACTION', choices: ['plan', 'apply'], description: 'Choose whether to run plan or apply.')
+    }
+
+    environment {
+        TERRAFORM_ORG = 'cloudorg'  // Replace with your Terraform Cloud org name
+        WORKSPACE_NAME = 'WP-useast1-dev'  // Replace with your Terraform Cloud workspace name
+        API_TOKEN = credentials('TERRAFORM_API_TOKEN')  // API Token from Jenkins credentials
+    }
+
+    stages {
+        stage('Get Workspace ID') {
+            steps {
+                script {
+                    def workspaceResponse = sh(
+                        script: """
+                        curl --silent --header "Authorization: Bearer ${API_TOKEN}" \
+                             --header "Content-Type: application/vnd.api+json" \
+                             https://app.terraform.io/api/v2/organizations/${TERRAFORM_ORG}/workspaces/${WORKSPACE_NAME}
+                        """, 
+                        returnStdout: true
+                    )
+                    
+                    def parsedResponse = readJSON(text: workspaceResponse)
+                    if (parsedResponse.errors) {
+                        error "Failed to get workspace ID: ${parsedResponse.errors[0].title}"
+                    }
+
+                    env.WORKSPACE_ID = parsedResponse.data.id
+                }
+            }
+        }
+
+        stage('Trigger Terraform Run') {
+            steps {
+                script {
+                    def planOnly = (params.ACTION == 'plan')
+
+                    def payload = """
+                    {
+                        "data": {
+                            "attributes": {
+                                "message": "Triggered by Jenkins Pipeline (${params.ACTION})",
+                                "plan-only": ${planOnly}
+                            },
+                            "type": "runs",
+                            "relationships": {
+                                "workspace": {
+                                    "data": {
+                                        "type": "workspaces",
+                                        "id": "${WORKSPACE_ID}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """
+
+                    sh """
+                    curl --header "Authorization: Bearer ${API_TOKEN}" \
+                         --header "Content-Type: application/vnd.api+json" \
+                         --request POST \
+                         --data '${payload}' \
+                         https://app.terraform.io/api/v2/runs
+                    """
+                }
+            }
+        }
+    }
+}
