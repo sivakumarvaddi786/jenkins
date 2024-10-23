@@ -2,6 +2,10 @@ println(hudson.util.Secret.fromString("siva-ado-account").getEncryptedValue())
 com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance().getCredentials().forEach{println it.dump().replace(' ', '\n')}
 Jenkins.instance.queue.clear()
 
+Jenkins.instance.pluginManager.plugins.each { plugin ->
+    println("${plugin.getDisplayName()} (${plugin.getShortName()}): ${plugin.getVersion()}")
+}
+
 
 Jenkins.instance.getAllItems(Job.class).each { job ->
     job.builds.each { build ->
