@@ -15,25 +15,34 @@ Jenkins.instance.getAllItems(Job.class).each { job ->
     }
 }
 
-#disable jenkins nodes
+
+//Disable all jenkins nodes
 import jenkins.model.Jenkins
 
 // Get all nodes (agents) in Jenkins
-Jenkins.instance.nodes.each { node ->
-    // Set node to offline
-    node.setTemporarilyOffline(true, new hudson.slaves.OfflineCause.ByCLI("Disabled by script"))
-    println("Node ${node.displayName} has been disabled.")
+Jenkins.instance.computers.each { computer ->
+    if (computer.isOnline()) {
+        computer.setTemporarilyOffline(true, new hudson.slaves.OfflineCause.ByCLI("Disabled by script"))
+        println("Agent ${computer.name} has been disabled.")
+    }
 }
-#enable jenkins nodes back
+
+
+//Enable all jenkins nodes
 
 import jenkins.model.Jenkins
+
 // Get all nodes (agents) in Jenkins
-Jenkins.instance.nodes.each { node ->
-    // Set node to online
-    node.setTemporarilyOffline(false, null)
-    println("Node ${node.displayName} has been enabled.")
+Jenkins.instance.computers.each { computer ->
+    if (computer.isTemporarilyOffline()) {
+        computer.setTemporarilyOffline(false, null)
+        println("Agent ${computer.name} has been enabled.")
+    }
 }
 
+
+
+//cancel jobs
 
 import hudson.model.Queue
 
