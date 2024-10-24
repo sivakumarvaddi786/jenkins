@@ -6,6 +6,9 @@ openssl s_client -connect transpac-jenkins.pdidev.com:443 -showcerts > jenkins.c
 keytool -import -alias jenkins -keystore $JAVA_HOME/jre/lib/security/cacerts -file jenkins.crt
 It will prompt for a password. The default password is changeit.
 
+keytool -list -v -keystore "C:\Program Files\Microsoft\jdk-11.0.17.8-hotspot\lib\security\cacerts"
+keytool -list -v -keystore "C:\Program Files\Microsoft\jdk-11.0.17.8-hotspot\lib\security\cacerts" -alias jenkins
+
 
 Jenkins.instance.pluginManager.plugins.each { plugin ->
     println("${plugin.getDisplayName()} (${plugin.getShortName()}): ${plugin.getVersion()}")
