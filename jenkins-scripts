@@ -2,6 +2,11 @@ println(hudson.util.Secret.fromString("siva-ado-account").getEncryptedValue())
 com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance().getCredentials().forEach{println it.dump().replace(' ', '\n')}
 Jenkins.instance.queue.clear()
 
+openssl s_client -connect transpac-jenkins.pdidev.com:443 -showcerts > jenkins.crt
+keytool -import -alias jenkins -keystore $JAVA_HOME/jre/lib/security/cacerts -file jenkins.crt
+It will prompt for a password. The default password is changeit.
+
+
 Jenkins.instance.pluginManager.plugins.each { plugin ->
     println("${plugin.getDisplayName()} (${plugin.getShortName()}): ${plugin.getVersion()}")
 }
