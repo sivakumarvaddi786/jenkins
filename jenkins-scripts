@@ -15,6 +15,25 @@ Jenkins.instance.getAllItems(Job.class).each { job ->
     }
 }
 
+#disable jenkins nodes
+import jenkins.model.Jenkins
+
+// Get all nodes (agents) in Jenkins
+Jenkins.instance.nodes.each { node ->
+    // Set node to offline
+    node.setTemporarilyOffline(true, new hudson.slaves.OfflineCause.ByCLI("Disabled by script"))
+    println("Node ${node.displayName} has been disabled.")
+}
+#enable jenkins nodes back
+
+import jenkins.model.Jenkins
+// Get all nodes (agents) in Jenkins
+Jenkins.instance.nodes.each { node ->
+    // Set node to online
+    node.setTemporarilyOffline(false, null)
+    println("Node ${node.displayName} has been enabled.")
+}
+
 
 import hudson.model.Queue
 
