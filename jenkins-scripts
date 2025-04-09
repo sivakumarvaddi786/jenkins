@@ -2,6 +2,45 @@ println(hudson.util.Secret.fromString("siva-ado-account").getEncryptedValue())
 com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance().getCredentials().forEach{println it.dump().replace(' ', '\n')}
 Jenkins.instance.queue.clear()
 
+
+import com.cloudbees.plugins.credentials.*
+import com.cloudbees.plugins.credentials.domains.*
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.*
+import jenkins.model.Jenkins
+import hudson.security.ACL
+
+// Your credential ID
+def credentialId = "linux-agent-ssh-key"
+
+// Get all SSH credentials
+def creds = CredentialsProvider.lookupCredentials(
+    BasicSSHUserPrivateKey.class,
+    Jenkins.instance,
+    ACL.SYSTEM,
+    null,
+    null
+)
+
+// Find the one with your ID
+def target = creds.find { it.id == credentialId }
+
+if (target) {
+    println "Username: ${target.username}"
+
+    def keySource = target.getPrivateKeySource()
+
+    if (keySource instanceof BasicSSHUserPrivateKey.DirectEntryPrivateKeySource) {
+        println "Private Key:\n${keySource.getPrivateKey()}"
+    } else if (keySource instanceof BasicSSHUserPrivateKey.FileOnMasterPrivateKeySource) {
+        println "Private key is stored at: ${keySource.getPrivateKeyFile()}"
+    } else {
+        println "Private key source is not a supported type."
+    }
+} else {
+    println "Credential ID '${credentialId}' not found."
+}
+
+
 openssl s_client -connect transpac-jenkins.pdidev.com:443 -showcerts > jenkins.crt
 keytool -import -alias jenkins -keystore $JAVA_HOME/jre/lib/security/cacerts -file jenkins.crt
 It will prompt for a password. The default password is changeit.
