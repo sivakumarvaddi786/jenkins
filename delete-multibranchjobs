@@ -1,0 +1,52 @@
+import hudson.model.*
+import jenkins.model.*
+
+// Suggestion: Delete jobs in controlled batches with backups in place, during off-peak hours, to avoid system overload and data loss
+
+// Specify the list of Jenkins multi-branch pipeline job names
+def targetJobNames = ["folder/app1", "folder/app2"]
+
+// Get the Jenkins instance
+def jenkins = Jenkins.getInstance()
+
+// Iterate over each job name in the list
+targetJobNames.each { targetJobName ->
+    def targetJob = jenkins.getItemByFullName(targetJobName)
+
+    if (targetJob instanceof org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject) {
+        targetJob.getItems().each { branch ->
+            println("Branch: ${branch.name}")
+
+            def currentTimeMillis = System.currentTimeMillis()
+            def buildsToDelete = []
+
+            branch.getBuilds().each { build ->
+                def buildTimeMillis = build.getTimeInMillis()
+                def buildAgeMillis = currentTimeMillis - buildTimeMillis
+                def buildAgeDays = buildAgeMillis / (1000 * 60 * 60 * 24)
+
+                if (buildAgeDays > 90) {
+                    println("Job: ${branch.name}, Build Number: ${build.number}, Build Age: ${buildAgeDays} days")
+                    buildsToDelete.add(build)
+                }
+            }
+
+            // Delete builds in controlled batches of 500, with 10s delay between batches
+            def batchSize = 500
+            buildsToDelete.collate(batchSize).eachWithIndex { batch, idx ->
+                println("Deleting batch ${idx + 1} for branch ${branch.name} (${batch.size()} builds)")
+                batch.each { build ->
+                    try {
+                        build.delete()
+                        println("Deleted build: ${build.fullDisplayName}")
+                    } catch (Exception e) {
+                        println("Failed to delete build: ${build.fullDisplayName} - ${e.message}")
+                    }
+                }
+                sleep(10000) // Wait 10 seconds between batches
+            }
+        }
+    } else {
+        println("Multi-branch pipeline job ${targetJobName} not found in Jenkins.")
+    }
+}
