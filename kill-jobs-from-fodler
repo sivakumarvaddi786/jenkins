@@ -1,0 +1,25 @@
+import jenkins.model.*
+import hudson.model.*
+
+def folderName = "Bestbuy-test"
+def jenkins = Jenkins.instance
+
+// Locate the folder
+def folder = jenkins.getItem(folderName)
+if (!folder) {
+    println "Folder '${folderName}' not found!"
+    return
+}
+
+// Go through all jobs in the folder
+folder.getAllJobs().each { job ->
+    println "Checking job: ${job.fullName}"
+
+    job.builds.findAll { it.isBuilding() }.each { build ->
+        println " - Killing build: ${build}"
+        build.doStop()          // Graceful stop
+        build.doKill()          // Force stop if needed
+    }
+}
+
+println "\nDone — all running builds in folder '${folderName}' have been stopped."
